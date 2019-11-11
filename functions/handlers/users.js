@@ -1,4 +1,4 @@
-const { db } = require("../utilities/admin");
+const { admin, db } = require("../utilities/admin");
 
 const config = require("../utilities/config");
 
@@ -24,6 +24,8 @@ exports.signUp = (req, res) => {
     const { valid, error } = validateSignUpData(newUser);
 
     if (!valid) return res.status(400).json(errors);
+
+    const defaultImg = "default-avatar.jpg";
 
     let token, userId;
     db.doc(`/users/${newUser.handle}`)
@@ -52,6 +54,7 @@ exports.signUp = (req, res) => {
                 handle: newUser.handle,
                 email: newUser.email,
                 createdAt: new Date().toISOString(),
+                imageUrl: `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${defaultImg}?alt=media`,
                 userId
             };
             db.doc(`/users/${newUser.handle}`).set(userCredentials);
@@ -99,4 +102,65 @@ exports.signIn = (req, res) => {
             }
             return res.status(500).json({ error: err.code });
         });
+};
+
+exports.uploadImage = (req, res) => {
+    const BusBoy = require("busboy");
+    const path = require("path");
+    // The os module provides operating system-related utility methods and properties.
+    const os = require("os");
+    // The fs module provides an API for interacting with the file system.
+    const fs = require("fs");
+
+    const busboy = new BusBoy({ headers: req.headers });
+
+    let imageFileName;
+    let imageToUpload = {};
+
+    busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+        if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
+            return res.status(400).json({ error: "Wrong file type submitted" });
+        }
+        // Get the ext of the file :
+        // for example my.image.png we need to get the 'png' only
+        const imageExtension = filename.split(".")[
+            filename.split(".").length - 1
+        ];
+        // generate a random name for the image to upload
+        imageFileName = `${Math.round(
+            Math.random() * 1000000000000
+        )}.${imageExtension}`;
+        // os.tmpdir : Returns the operating system's default directory for temporary files as a string.
+        const filePath = path.join(os.tmpdir(), imageFileName);
+        imageToUpload = {
+            filePath,
+            mimetype
+        };
+        file.pipe(fs.createWriteStream(filePath));
+    });
+    busboy.on("finish", () => {
+        admin
+            .storage()
+            .bucket()
+            .upload(imageToUpload.filePath, {
+                resumable: false,
+                metadata: {
+                    metadata: {
+                        contentType: imageToUpload.mimetype
+                    }
+                }
+            })
+            .then(() => {
+                const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
+                return db.doc(`/users/${req.user.handle}`).update({ imageUrl });
+            })
+            .then(() => {
+                return res.json({ message: "Image uploaded successfully" });
+            })
+            .catch(err => {
+                console.error(err);
+                return res.status(500).json({ error: err.code });
+            });
+    });
+    busboy.end(req.rawBody);
 };
