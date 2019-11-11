@@ -1,6 +1,6 @@
 const { db } = require("../utilities/admin");
 
-const { config } = require("../utilities/config");
+const config = require("../utilities/config");
 
 const firebase = require("firebase");
 
@@ -8,6 +8,8 @@ const {
     validateSignUpData,
     validateLogInData
 } = require("../utilities/validators");
+
+console.log(validateSignUpData);
 
 firebase.initializeApp(config);
 
@@ -75,7 +77,7 @@ exports.signIn = (req, res) => {
         password: req.body.password
     };
 
-    const { valid, error } = validateLogInData(newUser);
+    const { valid, error } = validateLogInData(user);
 
     if (!valid) return res.status(400).json(errors);
 

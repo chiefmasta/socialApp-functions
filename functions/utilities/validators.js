@@ -35,8 +35,8 @@ exports.validateSignUpData = data => {
 exports.validateLogInData = data => {
     let errors = {};
 
-    if (isEmpty(user.email)) errors.email = "Email must not be empty";
-    if (isEmpty(user.password)) errors.password = "Password must not be empty";
+    if (isEmpty(data.email)) errors.email = "Email must not be empty";
+    if (isEmpty(data.password)) errors.password = "Password must not be empty";
 
     if (Object.keys(errors).length > 0) return res.status(400).json(errors);
 
@@ -45,5 +45,3 @@ exports.validateLogInData = data => {
         valid: Object.keys(errors).length === 0 ? true : false
     };
 };
-
-module.exports = { isEmpty, isEmailValid };
