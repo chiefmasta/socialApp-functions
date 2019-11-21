@@ -92,6 +92,11 @@ exports.commentOnScream = (req, res) => {
             if (!doc.exists) {
                 return res.status(404).json({ error: 'Scream not found !' });
             }
+            return doc.ref.update({
+                commentCount: doc.data().commentCount + 1,
+            });
+        })
+        .then(() => {
             return db.collection('comments').add(newComment);
         })
         .then(() => {
@@ -152,6 +157,7 @@ exports.likeScream = (req, res) => {
         });
 };
 
+// Unlike scream
 exports.unlikeScream = (req, res) => {
     const likeDocument = db
         .collection('likes')
@@ -190,6 +196,58 @@ exports.unlikeScream = (req, res) => {
             } else {
                 return res.status(400).json({ error: 'Scream not liked' });
             }
+        })
+        .catch(err => {
+            console.error(err);
+            res.status(500).json({ error: err.code });
+        });
+};
+
+// Delete Scream
+exports.deleteScream = (req, res) => {
+    const screamDocument = db.doc(`/screams/${req.params.screamId}`);
+    // Get all the scream's likes
+    const likesDocument = db
+        .collection('likes')
+        .where('screamId', '==', req.params.screamId);
+    // Get all the scream's comment
+    const commentsDocument = db
+        .collection('comments')
+        .where('screamId', '==', req.params.screamId);
+
+    screamDocument
+        .get()
+        .then(doc => {
+            if (!doc.exists) {
+                return res.status(404).json({ error: 'Scream not found' });
+            }
+            if (doc.data().userHandle !== req.user.handle) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            } else {
+                return likesDocument.get();
+            }
+        })
+        .then(data => {
+            // delete all the scream's likes
+            if (!data.empty) {
+                data.docs.forEach(elm => {
+                    elm.ref.delete();
+                });
+            }
+            return commentsDocument.get();
+        })
+        .then(data => {
+            // delete all the scream's comments
+            if (!data.empty) {
+                data.docs.forEach(elm => {
+                    elm.ref.delete();
+                });
+            }
+            // delete the scream
+            return screamDocument.delete();
+        })
+        .then(() => {
+            res.json({ message: 'Scream deleted successfully' });
         })
         .catch(err => {
             console.error(err);
