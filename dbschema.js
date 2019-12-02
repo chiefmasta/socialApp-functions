@@ -30,6 +30,16 @@ let db = {
             createdAt: '2019-03-15T10:59:52.798Z',
         },
     ],
+    notifications: [
+        {
+            recipent: 'user',
+            sender: 'Anass',
+            read: 'True | False',
+            screamId: 'kdjsfgdksuufhgkdsufky',
+            type: 'like | comment',
+            createdAt: '2019-11-11T23:23:14.377Z',
+        },
+    ],
 };
 const userDetails = {
     // Redux data
