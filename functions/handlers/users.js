@@ -69,7 +69,9 @@ exports.signUp = (req, res) => {
                     .status(400)
                     .json({ email: 'email is already in use' });
             } else {
-                return res.status(500).json({ error: err.code });
+                return res.status(500).json({
+                    general: 'Something went wrong, please try again',
+                });
             }
         });
 };
@@ -95,13 +97,9 @@ exports.signIn = (req, res) => {
             return res.json(token);
         })
         .catch(err => {
-            console.error(err);
-            if (err.code === 'auth/wrong-password') {
-                return res
-                    .status(403)
-                    .json({ general: 'Wrong credentials, please try again.' });
-            }
-            return res.status(500).json({ error: err.code });
+            return res
+                .status(403)
+                .json({ general: 'Wrong credentials, please try again.' });
         });
 };
 
